@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkillScroll MVP</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="top-header">
+            <div class="skill-level">ಕೌಶಲ್ಯ ಮಟ್ಟ: ಕಲಿಯುತ್ತಿರುವ ನೇಕಾರ (Apprentice)</div>
+            <div class="xp-bar-container"><div class="xp-bar" id="xpBar"></div></div>
+        </header>
+
+        <div class="onboarding-banner" style="background: #1e293b; padding: 15px; margin: 10px 20px; border-radius: 10px; color: #94a3b8; font-size: 0.9em; text-align: center;">
+            <strong>ಹೇಗೆ ಬಳಸುವುದು? (How to use)</strong><br>
+            ೧. ಆಫರ್ ಆಲಿಸಿ (Listen) &rarr; ೨. ರೇಕಾರ್ಡ್ ಬಟನ್ ಒತ್ತಿ (Speak) &rarr; ೩. ನಿಮ್ಮ ಸ್ಕೋರ್ ತಿಳಿಯಿರಿ (Get Score)
+        </div>
+
+        <main class="quest-feed" id="questFeed">
+            <div class="quest-card" data-quest-id="quest-1">
+                <div class="quest-content">
+                    <span class="quest-badge">Hard</span>
+                    <h2>ಮಂಡಿ ಚೌಕಾಸಿ (Mandi Hustle)</h2>
+                    <p>ಮೈಸೂರು ರೇಷ್ಮೆಗೆ 30-40% ಕಡಿಮೆ ಬೆಲೆ ಕೇಳುವ ವ್ಯಾಪಾರಿಯೊಂದಿಗೆ ಚೌಕಾಸಿ ಮಾಡಿ.</p>
+                    <button class="start-btn" onclick="openNegotiation('quest-1', 'ಮಂಡಿ ಚೌಕಾಸಿ')">ಪ್ರಾರಂಭಿಸಿ (Start)</button>
+                </div>
+            </div>
+
+            <div class="quest-card" data-quest-id="quest-2" style="background: linear-gradient(135deg, rgba(30,40,40,0.9), rgba(10,20,20,0.9));">
+                <div class="quest-content">
+                    <span class="quest-badge" style="background:#ff9800;">Medium</span>
+                    <h2>ಸಾಲದ ಬಲೆ (Credit Trap)</h2>
+                    <p>ಸಾಲದ ಮೇಲೆ ಸರಕು ಕೇಳುವ ಖರೀದಿದಾರ. 50% ಮುಂಗಡ (Advance) ಕೇಳಿ!</p>
+                    <button class="start-btn" onclick="openNegotiation('quest-2', 'ಸಾಲದ ಬಲೆ')">ಪ್ರಾರಂಭಿಸಿ (Start)</button>
+                </div>
+            </div>
+
+            <div class="quest-card" data-quest-id="quest-3" style="background: linear-gradient(135deg, rgba(40,30,40,0.9), rgba(20,10,20,0.9));">
+                <div class="quest-content">
+                    <span class="quest-badge" style="background:#4caf50;">Easy</span>
+                    <h2>ಪ್ರವಾಸಿಗರ ವ್ಯಾಪಾರ (Tourist Bargain)</h2>
+                    <p>ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ಮಾತನಾಡುವ ಪ್ರವಾಸಿಗರೊಂದಿಗೆ ವ್ಯಾಪಾರ ಮಾಡಿ.</p>
+                    <button class="start-btn" onclick="openNegotiation('quest-3', 'ಪ್ರವಾಸಿಗರ ವ್ಯಾಪಾರ')">ಪ್ರಾರಂಭಿಸಿ (Start)</button>
+                </div>
+            </div>
+        </main>
+
+        <div class="negotiation-overlay" id="negotiationOverlay">
+            <div class="negotiation-header">
+                <button class="back-btn" onclick="closeNegotiation()"><i class="fas fa-arrow-left"></i></button>
+                <h3 id="activeQuestTitle">ಮಂಡಿ ಚೌಕಾಸಿ</h3>
+            </div>
+            
+            <div class="chat-area" id="chatArea">
+                <div class="system-msg">ಮೈಕ್ ಬಟನ್ ಒತ್ತಿ ಹಿಡಿದು ಮಾತನಾಡಿ (Hold mic to speak).</div>
+            </div>
+
+            <div class="controls-area">
+                <div class="status-indicator" id="statusIndicator">ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ... (Connecting)</div>
+                <button class="ptt-btn" id="pttBtn">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="feedback-modal" id="feedbackModal">
+            <div class="feedback-content">
+                <h2>ವರದಿ (Report Card) <i class="fas fa-chart-line" style="color: #00BFA5;"></i></h2>
+                <div class="confidence-meter">
+                    <div class="meter-fill" id="meterFill"></div>
+                </div>
+                <p class="confidence-text">ಸ್ಕೋರ್ (Score): <span id="confidenceScore">0</span>/100</p>
+                
+                <div style="background: #1e293b; padding: 15px; border-radius: 8px; margin: 15px 0; text-align: left; border-left: 4px solid #00BFA5;">
+                    <p style="font-size: 0.85em; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase;">AI Feedback:</p>
+                    <p id="aiFeedbackText" style="font-size: 1em; color: #e2e8f0; line-height: 1.4;">Loading feedback...</p>
+                </div>
+
+                <button class="share-btn" onclick="shareToWhatsApp()"><i class="fab fa-whatsapp"></i> WhatsApp ನಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ</button>
+                <button class="close-feedback-btn" onclick="closeFeedback()">ಮುಂದುವರೆಯಿರಿ (Continue)</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
