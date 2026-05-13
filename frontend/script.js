@@ -4,7 +4,6 @@ let voices = [];
 function loadVoices() {
     voices = window.speechSynthesis.getVoices();
 }
-
 window.speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices(); // Initial load
 
@@ -42,33 +41,32 @@ function openNegotiation(questId, title) {
     activeQuestTitle.textContent = title;
     turnCount = 0;
     conversationHistory = [];
-    
+   
     chatArea.innerHTML = '';
     overlay.classList.add('active');
-    
+   
     statusIndicator.textContent = "ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ...";
     disablePttBtn();
-    
+   
     playInitialGreeting(questId);
 }
 
 async function playInitialGreeting(questId) {
     statusIndicator.textContent = "ಆಲೋಚಿಸುತ್ತಿದೆ...";
-    
+   
     try {
         const response = await fetch(`/start_negotiation?quest_id=${questId}`);
         if (!response.ok) throw new Error("Failed");
-
-        const data = await response.json();
         
+        const data = await response.json();
+       
         conversationHistory.push({role: "model", parts: [{text: data.text}]});
         addBubble(data.text, "agent");
-
+        
         speakKannada(data.text, () => {
             statusIndicator.textContent = "ಮೈಕ್ ಬಟನ್ ಒತ್ತಿ ಮಾತನಾಡಿ";
             enablePttBtn();
         });
-
     } catch (err) {
         console.error(err);
         statusIndicator.textContent = "Error loading greeting.";
@@ -78,16 +76,15 @@ async function playInitialGreeting(questId) {
 
 // Improved Speech Function
 function speakKannada(text, onEndCallback = null) {
-    window.speechSynthesis.cancel(); // Clear previous
-    
+    window.speechSynthesis.cancel();
+   
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'kn-IN';
     utterance.rate = 0.92;
     utterance.pitch = 1.0;
 
-    // Use best available Kannada voice
     if (voices.length > 0) {
-        const bestVoice = voices.find(v => 
+        const bestVoice = voices.find(v =>
             v.lang.includes('kn') || 
             v.name.toLowerCase().includes('kannada') ||
             v.name.toLowerCase().includes('indian')
@@ -98,7 +95,6 @@ function speakKannada(text, onEndCallback = null) {
     utterance.onend = () => {
         if (onEndCallback) onEndCallback();
     };
-
     window.speechSynthesis.speak(utterance);
 }
 
@@ -109,7 +105,7 @@ function closeNegotiation() {
     enablePttBtn();
 }
 
-// ====================== Recording Logic ======================
+// ====================== IMPROVED RECORDING LOGIC ======================
 pttBtn.addEventListener('mousedown', startRecording);
 pttBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
 
@@ -121,8 +117,13 @@ async function startRecording() {
     if (isRecording) return;
 
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: { 
+                echoCancellation: true,
+                noiseSuppression: true
+            } 
+        });
+
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
             ? 'audio/webm;codecs=opus' 
             : 'audio/webm';
@@ -131,35 +132,38 @@ async function startRecording() {
         audioChunks = [];
 
         mediaRecorder.ondataavailable = e => {
-            if (e.data.size > 0) audioChunks.push(e.data);
+            if (e.data && e.data.size > 0) {
+                audioChunks.push(e.data);
+            }
         };
 
-        mediaRecorder.start(500); // Record in chunks
+        mediaRecorder.start(300);   // Record in small chunks - better for mobile
         isRecording = true;
         pttBtn.classList.add('recording');
         statusIndicator.textContent = "ಆಲಿಸುತ್ತಿದೆ... 🎤";
         statusIndicator.style.color = "var(--primary)";
 
     } catch (err) {
-        console.error("Mic error:", err);
+        console.error("Mic Error:", err);
         statusIndicator.textContent = "ಮೈಕ್ ಅನುಮತಿ ನೀಡಿ";
     }
 }
 
 function stopRecording(sendData) {
     if (!isRecording || !mediaRecorder) return;
-    
+
     isRecording = false;
     pttBtn.classList.remove('recording');
 
     if (sendData) {
         mediaRecorder.onstop = async () => {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            console.log("🎤 Audio Recorded Size:", audioBlob.size, "bytes");
+
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
 
-            if (audioBlob.size < 2500) {   // Increased minimum size
-                alert("ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ಹೆಚ್ಚು ಸಮಯ ಮಾತನಾಡಿ");
-                statusIndicator.textContent = "ಮೈಕ್ ಬಟನ್ ಒತ್ತಿ ಮಾತನಾಡಿ";
+            if (audioBlob.size < 1500) {
+                statusIndicator.textContent = "ದಯವಿಟ್ಟು 4-5 ಸೆಕೆಂಡ್ ಮಾತನಾಡಿ";
                 enablePttBtn();
                 return;
             }
@@ -169,7 +173,6 @@ function stopRecording(sendData) {
         };
         mediaRecorder.stop();
     } else {
-        mediaRecorder.stop();
         if (mediaRecorder.stream) {
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
         }
@@ -184,7 +187,11 @@ async function sendAudioToBackend(audioBlob) {
     formData.append("audio", audioBlob, "audio.webm");
 
     try {
-        const response = await fetch('/negotiate', { method: 'POST', body: formData });
+        const response = await fetch('/negotiate', { 
+            method: 'POST', 
+            body: formData 
+        });
+        
         const data = await response.json();
 
         if (!response.ok) {
@@ -193,7 +200,6 @@ async function sendAudioToBackend(audioBlob) {
             return;
         }
 
-        // Add to history
         conversationHistory.push({role: "user", parts: [{text: data.user_text}]});
         conversationHistory.push({role: "model", parts: [{text: data.text}]});
         turnCount++;
@@ -225,12 +231,11 @@ function addBubble(text, sender) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// Feedback functions remain same
 function showFeedback(score, aiFeedbackText) {
     document.getElementById('aiFeedbackText').textContent = aiFeedbackText;
     document.getElementById('confidenceScore').textContent = score;
     feedbackModal.classList.add('active');
-    
+   
     setTimeout(() => {
         document.getElementById('meterFill').style.width = `${score}%`;
         let current = parseInt(xpBar.style.width || "30");
